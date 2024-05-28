@@ -41,3 +41,10 @@ sec = [int(term) for term in sectors[y].split(",")]
 print(sec)
 
 #%%
+"""
+
+"""
+df_aux = df_exoplanets[(df_exoplanets['Planet_Radius'] > 10) & (df_exoplanets['Planet_Radius'] < 30)]
+df_exojup = df_aux.reset_index(drop=True)
+
+#%%

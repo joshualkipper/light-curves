@@ -21,10 +21,13 @@ import pandas as pd # versão 2.2.1
 #%%
 df_exoplanets = pd.read_csv('/home/joshua/Documentos/Iniciação Científica/light-curves/data_exoplanets.csv')
 
-planets = df_exoplanets.TIC.to_numpy()
-sectors = df_exoplanets.Sectors
-period = df_exoplanets.Period.to_numpy()
-author = df_exoplanets.Detection.to_numpy()
+df_aux = df_exoplanets[(df_exoplanets['Planet_Radius'] > 10) & (df_exoplanets['Planet_Radius'] < 30)]
+df_exojup = df_aux.reset_index(drop=True)
+
+planets = df_exojup.TIC
+sectors = df_exojup.Sectors
+period = df_exojup.Period
+author = df_exojup.Detection
 
 #%%
 def light_curve(planets, author, sectors, period):
@@ -61,8 +64,8 @@ def plot_light_curve(lc_set):
 
 #%%
 lc_set = []
-for i in range(3):
-    sec = [int(numero) for numero in df_exoplanets.Sectors[i].split(",")]
+for i in range(0,3):
+    sec = [int(numero) for numero in df_exojup.Sectors[i].split(",")]
     lc_o, lc_n, lc_s = light_curve(planets[i], author[i], sec, period[i])
     lc_set.append(lc_s)
 
