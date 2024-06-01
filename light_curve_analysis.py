@@ -5,7 +5,6 @@ Código para obtenção de curvas de luz pela bibilioteca lightkurve. Eventualme
 código tem como função realizar uma analise mais refinada em alguma curva de luz 
 específica que por ventura apresente problemas no método geral de importação de curvas 
 de luz. Nesse código os métodos são mais manuais.
-
 """
 #%%
 """
@@ -14,139 +13,273 @@ Bibliotecas a serem importadas:
     * numpy : https://numpy.org/doc/
     * matplotlib.pyplot :  https://matplotlib.org/stable/index.html
     * pandas : https://pandas.pydata.org/docs/
-    * scipy :
-
+    * scipy : https://docs.scipy.org/doc/scipy/
+    * math : https://docs.python.org/3/library/math.html
 """
 import lightkurve as lk # versão 2.4.2
 import numpy as np # versão 1.26.4
 import matplotlib.pyplot as plt # versão 3.5.1
+import matplotlib.ticker as ticker # versão 3.5.1
 import pandas as pd # versão 2.2.1
-from scipy.spatial import distance # versão 1.8.0
+import scipy.spatial as ss # versão 1.8.0
+import math as mt # versão 3.10.12
 
+#%%
+"""
+Informações do exoplaneta que será analisado.
+"""
+exoplanet = {
+    'TIC_ID' : 149603524,
+    'period' : 4.4119378, # dias
+    'time_transit' : 3.65, # em horas
+    'sectors': (1,2,3,4,6,7,8,9,10)  
+    }
 #%%
 """
 Variáveis de controle.
-
 """
-SHOW_LC_PLOT = True
-SHOW_LC_INFORMATION = False
-ALTERNATIVE_METHOD = False
+SHOW_PLOT = True
+SHOW_INFORMATION = False
+SHOW_ALTERNATIVE_METHOD = False
 
 #%%
 
 """
-Função utilizada para pesquisar as curvas de luz disponíveis 
-    * lk.search_lightcurve(target, radius=None, exptime=None, 
-                            cadence=None, mission=('Kepler', 'K2', 'TESS'), 
-                            author=None, quarter=None, month=None, campaign=None, 
-                            sector=None, limit=None)[source]
-
+Função utilizada para pesquisar as curvas de luz disponíveis.
+    * lk.search_lightcurve()
 """
-search_result = lk.search_lightcurve('TIC 38846515',    # ID do alvo
+search_result = lk.search_lightcurve(f'TIC {exoplanet["TIC_ID"]}',    # ID do alvo
                                       cadence ='short',     # ‘long’|‘short’|‘fast'|float
                                       mission = 'TESS',     # Missão autora dos dados
                                       author = 'SPOC',      # Cada autor usa uma grandeza de fluxo  
-                                      sector = (1,2,3,4,5,6,7,8,9,10)    # quarter|sector|campaign
+                                      sector = exoplanet['sectors']    # quarter|sector|campaign
                                       )
 
-if SHOW_LC_INFORMATION:
-    print(search_result) # Mostra a tabela com as informações da curva de luz 
+if SHOW_INFORMATION:
+    print(search_result) # Mostra a tabela com as informações da pesquisa
 
 #%%
 """
-Para fazer download de todas as curvas de luz, utiliza-se o comando : 
-    *.download_all() (vai ao final do nome do arquivo)
-
+Função para fazer download de todas as curvas de luz encontradas. 
+    *.download_all() 
 """
-lc_collection = search_result.download_all() #.stitch()
-
-if SHOW_LC_INFORMATION:
+lc_collection = search_result.download_all()
+if SHOW_INFORMATION:
    print(lc_collection)
    print(f"Número de curvas de luz: {len(lc_collection)}")
 
 #%%
 """
-Cada Curva de Luz tem a seguinte estrutura do tipo "tabela" 
-
+Cada Curva de Luz tem a seguinte estrutura do tipo "dataframe".
 """
-if SHOW_LC_INFORMATION:
-    print(lc_collection[0]) # O algarismo vai de 0 até N-1 onde N é o número de curvas de luz, ou seja, são os índices
-
+if SHOW_INFORMATION:
+    # O algarismo vai de 0 até N-1 onde N é o número de curvas de luz
+    print(lc_collection[0]) 
 #%%
-if SHOW_LC_INFORMATION:
-    print(lc_collection[0].columns) # Exibe o número de todas as colunas da curva de luz de índice N
-
-#%%
-"""
-Para visualizar o gráfico com as curvas de luz utiliza-se o comando :
-    .plot() (vai ao final do nome do arquivo)
-Embora parece diferente de usar um plot comum, é a mesma coisa (no quesito comandos),
-há algumas diferenças a serem investigadas
-    
-"""
-if SHOW_LC_PLOT: 
-    lc_collection.plot() #Pode-se escolher a curva de luz N com [N], após o nome do objeto
+if SHOW_INFORMATION:
+    # Exibe as colunas do objeto lightkurve
+    print(lc_collection[0].columns) 
 
 #%%
 """
-Para combinar todas as curvas de luz em uma única curva de luz, utiliza-se o comando :
+Função para visualizar o gráfico com as curvas de luz.
+    .plot()     
+"""
+if SHOW_PLOT:
+    plt.figure(figsize = (10,5))
+    lc_collection.plot() 
+    plt.legend(fontsize = 0)
+    plt.title('Light Curve Collection', fontsize = 16)
+    plt.show()
+
+#%%
+"""
+Função para combinar todas as curvas de luz em uma única curva de luz.
     .stitch() 
-o qual retorna um objeto da classe lightkurve.lightcurve.TessLightCurve. O comando sem argumentos irá retornar uma 
-curva normalizada de todas da união de todas as curvas.
-
+o qual retorna um objeto da classe lightkurve.lightcurve.TessLightCurve. O comando sem 
+argumentos irá retornar uma curva normalizada de todas da união de todas as curvas.
 """
-if ALTERNATIVE_METHOD:
+if SHOW_ALTERNATIVE_METHOD:
     lc = lc_collection.stitch(corrector_func=None)
 
-lc_normal = lc_collection.stitch() 
+lc_aux = lc_collection.stitch() 
+lc_normal = lc_aux.remove_nans() # Removendo 'NANS' para não atrapalhar nas análises
 
 #%%
-if SHOW_LC_PLOT:
-    lc_normal.scatter() # Plot com curvas de luz normalizadas 
+if SHOW_PLOT:
+    f = lc_normal.flux
+    t = lc_normal.time.value
+    fig, axs = plt.subplots(figsize = (10,5), dpi = 200)
+    text_legend = (
+        f'TIC ID : {exoplanet["TIC_ID"]}\n'
+        f'Period : {exoplanet["period"]:.2f} Days\n'
+        f'Transit : {exoplanet["time_transit"]} Hours'
+    )
+    axs.scatter(t, f, s = 1, label = text_legend, color = 'indigo')
+    axs.set_title('Light Curve Collection Normalized', fontsize = 16)
+    axs.legend(fontsize = 11, edgecolor = 'black')
+    # Configurações dos eixos e da borda
+    for spine in axs.spines.values():
+        spine.set_color('black')   # Cor da borda
+        spine.set_linewidth(1)     # Largura da borda
+    axs.xaxis.set_minor_locator(ticker.AutoMinorLocator(5)) # N° de risquinhos em x
+    axs.yaxis.set_minor_locator(ticker.AutoMinorLocator(5)) # || || || em y
+    # Ajustando o tamanho, cor e direção dos risquinhos
+    axs.tick_params(which = 'minor', length = 5, color = 'black', direction = 'in')
+    axs.tick_params(which = 'major', length = 8, color = 'black', direction = 'in')
+    axs.tick_params(axis = 'both', labelsize = 12)
+    axs.set_xlabel(f"Phase[Days]", fontsize = 12)
+    axs.set_ylabel("Normalized Flux", fontsize = 12)
+    plt.show()
 
 #%%
 """
-Outra maneira de normalizar a curva pela função 
+Outra maneira de normalizar a curva pela função
     .normalize()
 porém o stich parece melhor.
 """
-if ALTERNATIVE_METHOD:
-    lc_normalize = lc_collection[0].normalize() 
+if SHOW_ALTERNATIVE_METHOD:
+    lc_normalize = lc_collection[0].normalize() # Normaliza somente uma curva
+    if SHOW_PLOT:
+        t = lc_normalize.time.value
+        f = lc_normalize.flux
+        fig, axs = plt.subplots(figsize = (10,5), dpi = 200)
+        text_legend = (
+            f'TIC ID : {exoplanet["TIC_ID"]}\n'
+            f'Period : {exoplanet["period"]:.2f} Days\n'
+            f'Transit : {exoplanet["time_transit"]} Hours\n'
+            f'Sector : {lc_collection.sector[0]}'
+        )
+        axs.scatter(t, f, s = 1, label = text_legend, color = 'indigo')
+        axs.set_title('Light Curve Normalized', fontsize = 16)
+        axs.legend(fontsize = 11, edgecolor = 'black')
+        # Configurações dos eixos e da borda
+        for spine in axs.spines.values():
+            spine.set_color('black')   # Cor da borda
+            spine.set_linewidth(1)     # Largura da borda
+        axs.xaxis.set_minor_locator(ticker.AutoMinorLocator(5)) # N° de risquinhos em x
+        axs.yaxis.set_minor_locator(ticker.AutoMinorLocator(5)) # || || || em y
+        # Ajustando o tamanho, cor e direção dos risquinhos
+        axs.tick_params(which = 'minor', length = 5, color = 'black', direction = 'in')
+        axs.tick_params(which = 'major', length = 8, color = 'black', direction = 'in')
+        axs.tick_params(axis = 'both', labelsize = 12)
+        axs.set_xlabel(f"Phase[Days]", fontsize = 12)
+        axs.set_ylabel("Normalized Flux", fontsize = 12)
+        plt.show()
+
+#%%
+"""
+Aqui são plotados todas as curvas do 'lc_collection' normalizados um de cada vez
+"""
+# Exibir todos os gráficos de todas as curvas de luz
+if SHOW_ALTERNATIVE_METHOD:
+    # Obter a lista de cores padrão do matplotlib
+    default_colors = plt.rcParams['axes.prop_cycle'].by_key()['color']
+    for i, (lc, color) in enumerate(zip(lc_collection, default_colors)):
+        lc_normalize = lc.normalize()  # Normaliza a curva atual
+        if SHOW_PLOT:
+            t = lc_normalize.time.value
+            f = lc_normalize.flux
+            fig, axs = plt.subplots(figsize=(10, 5), dpi=200)
+            text_legend = (
+                f'TIC ID : {exoplanet["TIC_ID"]}\n'
+                f'Period : {exoplanet["period"]:.2f} Days\n'
+                f'Transit : {exoplanet["time_transit"]} Hours\n'
+                f'Sector : {lc_collection.sector[i]}'
+            )
+            axs.scatter(t, f, s=1, label=text_legend, color=color)
+            axs.set_title('Light Curve Normalized', fontsize=16)
+            axs.legend(fontsize=11, edgecolor='black')
+            # Configurações dos eixos e da borda
+            for spine in axs.spines.values():
+                spine.set_color('black')  # Cor da borda
+                spine.set_linewidth(1)  # Largura da borda
+            axs.xaxis.set_minor_locator(ticker.AutoMinorLocator(5))  # N° de risquinhos em x
+            axs.yaxis.set_minor_locator(ticker.AutoMinorLocator(5))  # || || || em y
+            # Ajustando o tamanho, cor e direção dos risquinhos
+            axs.tick_params(which='minor', length=5, color='black', direction='in')
+            axs.tick_params(which='major', length=8, color='black', direction='in')
+            axs.tick_params(axis='both', labelsize=12)
+            axs.set_xlabel("Phase [Days]", fontsize=12)
+            axs.set_ylabel("Normalized Flux", fontsize=12)
+            plt.show()
 
 #%%
 """
 Método para trabalho com as colunas do objeto 'lightkurve.lightcurve.TessLightCurve' em 
-forma de array.
-
+forma de array. Esse método é extremamente manual, por algumas particularidade do lightkurve
+é necessário converter o objeto para um dataframe do pandas e ai trabalhar com ele.
 """
-if ALTERNATIVE_METHOD:
-    period = 38.478761309913
+if SHOW_ALTERNATIVE_METHOD:
+    # Temos que converter o objeto lightkurve em um dataframe do pandas pois não 
+    # conseguimos trabalhar com ele
     df_aux = lc_normal.to_pandas()
-    time = (df_aux.index % period)
-    flux = df_aux.flux.to_numpy()
-    df_LC = pd.DataFrame({'time': time , 'flux': flux})
-    df_LC = df_LC.sort_values(by='time')
-    #print(df_LC)
-    
-    if SHOW_LC_PLOT:
-        plt.figure(figsize=(10,4))
-        plt.scatter(df_LC['time'] , df_LC['flux'], s=1, label = "TIC 27769688", color = 'black')
-        plt.legend(fontsize = 10)
-        plt.title('Light Curve Superposition')
-        plt.xlabel('Time(Days)')
-        plt.ylabel('Normalized Flux')
-        #plt.xlim(1.6, 1.95)
+    time = (df_aux.index % exoplanet['period']) # Maneira de dobrar as curva de luz
+    flux = df_aux.flux.to_numpy() # Remove o tempo como índice 
+    df_LC = pd.DataFrame({'time': time , 'flux': flux}) # Criando um novo dataframe
+    df_LC = df_LC.sort_values(by='time') # Reordenando de maneira crescente no tempo
+    if SHOW_INFORMATION:
+        print(df_LC)
+    if SHOW_PLOT:
+        t = df_LC['time']
+        f = df_LC['flux']
+        fig, axs = plt.subplots(figsize = (10,5), dpi = 200)
+        text_legend = (
+            f'TIC ID : {exoplanet["TIC_ID"]}\n'
+            f'Period : {exoplanet["period"]:.2f} Days\n'
+            f'Transit : {exoplanet["time_transit"]} Hours'
+        )        
+        axs.scatter(t, f, s = 1, label = text_legend, color = 'indigo')
+        axs.set_title('Light Curve Superposition', fontsize = 16)
+        axs.legend(fontsize = 11, edgecolor = 'black')
+        # Configurações dos eixos e da borda
+        for spine in axs.spines.values():
+            spine.set_color('black')   # Cor da borda
+            spine.set_linewidth(1)     # Largura da borda
+        axs.xaxis.set_minor_locator(ticker.AutoMinorLocator(5)) # N° de risquinhos em x
+        axs.yaxis.set_minor_locator(ticker.AutoMinorLocator(5)) # || || || em y
+        # Ajustando o tamanho, cor e direção dos risquinhos
+        axs.tick_params(which = 'minor', length = 5, color = 'black', direction = 'in')
+        axs.tick_params(which = 'major', length = 8, color = 'black', direction = 'in')
+        axs.tick_params(axis = 'both', labelsize = 12)
+        axs.set_xlabel(f"Phase[Days]", fontsize = 12)
+        axs.set_ylabel("Normalized Flux", fontsize = 12)
         plt.show()
 
 #%%
-period = 2.8493825 # perído orbital do exoplaneta em dias
-time_inicial = lc_normal.time.value[0] # tempo incial da curva de luz
-lc_aux = lc_normal.fold(period, time_inicial) # em geral esses dados estão descentralizados
-if SHOW_LC_PLOT:
-    plt.figure()
-    lc_aux.scatter()
-    plt.legend()
-    plt.title("Off-Center Light Curve Superposition")
+"""
+Função para realizar a sobreposição das curvas de luz em um único trânsito.
+    *.fold()
+"""
+time_inicial = lc_normal.time.value[0] # Tempo inicial da curva de luz
+# Em geral esses dados estão descentralizados
+lc_fold = lc_normal.fold(exoplanet['period'], time_inicial) 
+# Alteracoes para conseguir usar o plt.plot()
+if SHOW_PLOT:
+    t = lc_fold.time.value 
+    f = lc_fold.flux
+    # Constante para seccionar o transito no tempo adequeado 
+    fig, axs = plt.subplots(figsize = (10,5), dpi = 200)
+    text_legend = (
+        f'TIC ID : {exoplanet["TIC_ID"]}\n'
+        f'Period : {exoplanet["period"]:.2f} Days\n'
+        f'Transit : {exoplanet["time_transit"]} Hours'
+    )        
+    axs.scatter(t, f, s = 1, label = text_legend, color = 'indigo')
+    axs.set_title("Off-Center Light Curve Superposition", fontsize = 16)
+    axs.legend(loc='upper center', fontsize = 11, edgecolor = 'black')
+    # Configurações dos eixos e da borda
+    for spine in axs.spines.values():
+        spine.set_color('black')   # Cor da borda
+        spine.set_linewidth(1)     # Largura da borda
+    axs.xaxis.set_minor_locator(ticker.AutoMinorLocator(5)) # N° de risquinhos em x
+    axs.yaxis.set_minor_locator(ticker.AutoMinorLocator(5)) # || || || em y
+    # Ajustando o tamanho, cor e direção dos risquinhos
+    axs.tick_params(which = 'minor', length = 5, color = 'black', direction = 'in')
+    axs.tick_params(which = 'major', length = 8, color = 'black', direction = 'in')
+    axs.tick_params(axis = 'both', labelsize = 12)
+    axs.set_xlabel(f"Phase[Days]", fontsize = 12)
+    axs.set_ylabel("Normalized Flux", fontsize = 12)
     plt.show()
 
 #%%
@@ -157,82 +290,134 @@ coordenada temporal, ou seja, uma tupla
     (tempo associado ao fluxo minímo, fluxo minímo)
 após isso faremos com que esse valor de tempo específico seja nulo, ou seja, transladamos
 o minímo do fluxo para a origem.
-
 """
-flux_aux = lc_aux.flux
-time_aux = lc_aux.time
-time_min = time_aux.value[flux_aux.argmin()]
-
-time_transit = 3.567 # em horas
-section = (time_transit/24) * 5 # o 2 foi escolhido manualmente
-lc_superpostion = lc_normal.fold(period, time_inicial + time_min) # dados devidamente centralizados
-if SHOW_LC_PLOT:
-    plt.figure()
-    lc_superpostion.scatter()
-    plt.legend()
-    plt.title("Centered Superimposed Light Curve")
-    #plt.xlim(-section, section)
-    plt.show()
-
+if SHOW_ALTERNATIVE_METHOD:
+    flux_aux = lc_fold.flux
+    time_aux = lc_fold.time
+    time_min = time_aux.value[flux_aux.argmin()]
+    lc_superposition = lc_normal.fold(exoplanet['period'], time_inicial + time_min)
+    if SHOW_PLOT:
+        # Alteracoes para conseguir usar o plt.plot()
+        t = lc_superposition.time.value 
+        f = lc_superposition.flux
+        # Constante para seccionar o transito no tempo adequeado 
+        section = (exoplanet['time_transit'] / 24) * 2 
+        fig, axs = plt.subplots(figsize = (10,5), dpi = 200)
+        text_legend = (
+            f'TIC ID : {exoplanet["TIC_ID"]}\n'
+            f'Period : {exoplanet["period"]:.2f} Days\n'
+            f'Transit : {exoplanet["time_transit"]} Hours'
+        ) 
+        axs.scatter(t, f, s = 1, label = text_legend, color = 'indigo')
+        axs.set_title("Centered Superimposed Light Curve", fontsize = 16)
+        axs.legend(loc='upper center', fontsize = 11, edgecolor = 'black')
+        # Configurações dos eixos e da borda
+        for spine in axs.spines.values():
+            spine.set_color('black')   # Cor da borda
+            spine.set_linewidth(1)     # Largura da borda
+        axs.xaxis.set_minor_locator(ticker.AutoMinorLocator(5)) # N° de risquinhos em x
+        axs.yaxis.set_minor_locator(ticker.AutoMinorLocator(5)) # || || || em y
+        # Ajustando o tamanho, cor e direção dos risquinhos
+        axs.tick_params(which = 'minor', length = 5, color = 'black', direction = 'in')
+        axs.tick_params(which = 'major', length = 8, color = 'black', direction = 'in')
+        axs.tick_params(axis = 'both', labelsize = 12)
+        axs.set_xlabel(f"Phase[Days]", fontsize = 12)
+        axs.set_ylabel("Normalized Flux", fontsize = 12)
+        axs.set_xlim(-section, section) # Corte no eixo temporal
+        plt.show()
+        
 #%%
 """
-Função qua irá analisar a vizinhança 
+Função qua irá analisar a vizinhança
     ε > |p - p_o| tq ε > 0
 onde p e p_o pertencem a matriz 'points'. A funça tem que ser otimizada, pois como fuga
 para não analizar todos os pontos de 'points' foi estabelecido que se há 30 vizinhos 
 de p_o, então esse será o ponto escolhido.
-
 """
 def neighborhood(points, radius):
-    max_neighbors = 0
     best_point = None
-    
     for point in points:
         # Calcular a distância de 'point' para todos os outros pontos
-        distances = distance.cdist([point], points, 'euclidean').flatten()
-        
+        distances = ss.distance.cdist([point], points, 'euclidean').flatten()
         # Contar quantos pontos estão dentro do raio (excluindo o próprio ponto)
         neighbors = np.sum(distances < radius) - 1
-        
-        if neighbors == 30:  # Se um ponto tiver 30 vizinhos, terminar a busca
+        if neighbors > 10:  # Se um ponto tiver no mínimo 10 vizinhos, terminar a busca
             best_point = point
-            max_neighbors = neighbors
-            break
-        
-        if neighbors > max_neighbors:
-            max_neighbors = neighbors
-            best_point = point
-            
-    return best_point, max_neighbors
+            break 
+    return best_point
 
 #%%
-
-f = lc_aux.remove_nans() # remover nans para não atrapalhar na busca
-
-time_column = f.time.value.tolist()
-flux_column = f.flux.value.tolist()
+"""
+Formatação dos dados para que seja possível iterá-los. Além disso escrevemos a matriz
+em ordem crescente, em relação ao fluxo, isso nos permite fugir da faixa centrar onde 
+o fluxo é constante, e portanto seriam satisfeitas as condições de vizinhos.
+"""
+time_column = lc_fold.time.value.tolist()
+flux_column = lc_fold.flux.value.tolist()
 matrix = np.column_stack((time_column, flux_column))
-
-new_index = np.argsort(matrix[:, 1])
-points = matrix[new_index] # um matriz Nx2, com os pontos de interesse
-
-#%%
-radius = 1.0e-4 # raio escolhido de maneira arbitrária
-best_point, max_neighbors = neighborhood(points, radius)
-new_time_min = best_point[0]
+# Escrevendo od indíces em ordem crescente em relação ao fluxo
+new_index = np.argsort(matrix[:, 1])  
+points = matrix[new_index] # Uma matriz Nx2, com os pontos de interesse
 
 #%%
 """
-Segunda tentativa de centralizar os dados.
-
+Função que tem como objetivo determinar o valor de ε utilizando os dados de fluxo. 
+Utilizamos a diferenças entre o fluxo médio e o fluxo minimo para estimar a ordem do
+raio da vizinhança.
 """
-lc_superpostion = lc_normal.fold(period, time_inicial + new_time_min) # dados devidamente centralizados
-if SHOW_LC_PLOT:
-    plt.figure()
-    lc_superpostion.scatter()
-    plt.legend()
-    plt.title("Centered Superimposed Light Curve")
-    #plt.xlim(-section, section)
+def epslon(flux_medium, flux_minimun):
+    a = flux_medium - flux_minimun
+    if a == 0:
+        return 0
+    # Função que tira o expoente de 'a' e pega o valor inteiro do produto com o log
+    exponent = mt.floor(mt.log10(abs(a)))
+    epslon = 1 * (10**exponent)
+    return epslon
+
+#%%
+flux_medium = lc_fold.flux.mean()
+flux_minimun = lc_fold.flux.min()
+# Estimativa do raio da vizinhança do ponto mínimo
+radius = epslon(flux_medium, flux_minimun) 
+# Novo ajuste para o tempo tal que o fluxo seja minímo
+new_time_min = neighborhood(points, radius)
+
+#%%
+"""
+Segunda tentativa de centralizar os dados usando a vizinhança do ponto minímo.
+"""
+lc_superposition = lc_normal.fold(exoplanet['period'], time_inicial + new_time_min[0])
+# Gráfico com foco no transito superposto
+for i in range(2):
+    constant_time = [1, 24] # Lista para mudança da fase
+    # Alteracoes para conseguir usar o plt.plot()
+    t = lc_superposition.time.value * constant_time[i]
+    f = lc_superposition.flux
+    # Constante para seccionar o transito no tempo adequeado 
+    section = (exoplanet['time_transit'] / 24) * 2 * (constant_time[i])
+    fig, axs = plt.subplots(figsize = (10,5), dpi = 200)
+    text_legend = (
+        f'TIC ID : {exoplanet["TIC_ID"]}\n'
+        f'Period : {exoplanet["period"]:.2f} Days\n'
+        f'Transit : {exoplanet["time_transit"]} Hours'
+    ) 
+    axs.scatter(t, f, s = 1, label = text_legend, color = 'indigo')
+    axs.set_title("Centered Superimposed Light Curve", fontsize = 16)
+    axs.legend(loc='upper center', fontsize = 11, edgecolor = 'black')
+    # Configurações dos eixos e da borda
+    for spine in axs.spines.values():
+        spine.set_color('black')   # Cor da borda
+        spine.set_linewidth(1)     # Largura da borda
+    axs.xaxis.set_minor_locator(ticker.AutoMinorLocator(5)) # N° de risquinhos em x
+    axs.yaxis.set_minor_locator(ticker.AutoMinorLocator(5)) # || || || em y
+    # Ajustando o tamanho, cor e direção dos risquinhos
+    axs.tick_params(which = 'minor', length = 5, color = 'black', direction = 'in')
+    axs.tick_params(which = 'major', length = 8, color = 'black', direction = 'in')
+    axs.tick_params(axis = 'both', labelsize = 12)
+    text_time = ['Days', 'Hours']
+    axs.set_xlabel(f"Phase[{text_time[i]}]", fontsize = 12)
+    axs.set_ylabel("Normalized Flux", fontsize = 12)
+    axs.set_xlim(-section, section) # Corte no eixo temporal
     plt.show()
-    
+
 #%%
