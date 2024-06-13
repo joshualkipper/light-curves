@@ -29,18 +29,18 @@ import math as mt # versão 3.10.12
 Informações do exoplaneta que será analisado.
 """
 exoplanet = {
-    'TIC_ID' : 149603524,
-    'period' : 4.4119378, # Dias
-    'time_transit' : 3.65, # Horas
-    'sectors': (1,2,3,4,6,7,8,9,10)  
+    'TIC_ID' : 165987272,
+    'period' : 7.8456075, # Dias
+    'time_transit' : 5.892, # Horas
+    'sectors': (2,29,69)  
     }
 #%%
 """
 Variáveis de controle.
 """
 SHOW_PLOT = True
-SHOW_INFORMATION = False
-SHOW_ALTERNATIVE_METHOD = False
+SHOW_INFORMATION = True
+SHOW_ALTERNATIVE_METHOD = True
 
 #%%
 
@@ -113,7 +113,7 @@ if SHOW_PLOT:
     text_legend = (
         f'TIC ID : {exoplanet["TIC_ID"]}\n'
         f'Period : {exoplanet["period"]:.2f} Days\n'
-        f'Transit : {exoplanet["time_transit"]} Hours'
+        f'Transit : {exoplanet["time_transit"]:.2f} Hours'
     )
     axs.scatter(t, f, s = 1, label = text_legend, color = 'indigo')
     axs.set_title('Light Curve Collection Normalized', fontsize = 16)
@@ -147,7 +147,7 @@ if SHOW_ALTERNATIVE_METHOD:
         text_legend = (
             f'TIC ID : {exoplanet["TIC_ID"]}\n'
             f'Period : {exoplanet["period"]:.2f} Days\n'
-            f'Transit : {exoplanet["time_transit"]} Hours\n'
+            f'Transit : {exoplanet["time_transit"]:.2f} Hours\n'
             f'Sector : {lc_collection.sector[0]}'
         )
         axs.scatter(t, f, s = 1, label = text_legend, color = 'indigo')
@@ -184,7 +184,7 @@ if SHOW_ALTERNATIVE_METHOD:
             text_legend = (
                 f'TIC ID : {exoplanet["TIC_ID"]}\n'
                 f'Period : {exoplanet["period"]:.2f} Days\n'
-                f'Transit : {exoplanet["time_transit"]} Hours\n'
+                f'Transit : {exoplanet["time_transit"]:.2f} Hours\n'
                 f'Sector : {lc_collection.sector[i]}'
             )
             axs.scatter(t, f, s=1, label=text_legend, color=color)
@@ -227,7 +227,7 @@ if SHOW_ALTERNATIVE_METHOD:
         text_legend = (
             f'TIC ID : {exoplanet["TIC_ID"]}\n'
             f'Period : {exoplanet["period"]:.2f} Days\n'
-            f'Transit : {exoplanet["time_transit"]} Hours'
+            f'Transit : {exoplanet["time_transit"]:.2f} Hours'
         )        
         axs.scatter(t, f, s = 1, label = text_legend, color = 'indigo')
         axs.set_title('Light Curve Superposition', fontsize = 16)
@@ -263,7 +263,7 @@ if SHOW_PLOT:
     text_legend = (
         f'TIC ID : {exoplanet["TIC_ID"]}\n'
         f'Period : {exoplanet["period"]:.2f} Days\n'
-        f'Transit : {exoplanet["time_transit"]} Hours'
+        f'Transit : {exoplanet["time_transit"]:.2f} Hours'
     )        
     axs.scatter(t, f, s = 1, label = text_legend, color = 'indigo')
     axs.set_title("Off-Center Light Curve Superposition", fontsize = 16)
@@ -306,7 +306,7 @@ if SHOW_ALTERNATIVE_METHOD:
         text_legend = (
             f'TIC ID : {exoplanet["TIC_ID"]}\n'
             f'Period : {exoplanet["period"]:.2f} Days\n'
-            f'Transit : {exoplanet["time_transit"]} Hours'
+            f'Transit : {exoplanet["time_transit"]:.2f} Hours'
         ) 
         axs.scatter(t, f, s = 1, label = text_legend, color = 'indigo')
         axs.set_title("Centered Superimposed Light Curve", fontsize = 16)
@@ -341,7 +341,7 @@ def neighborhood(points, radius):
         distances = ss.distance.cdist([point], points, 'euclidean').flatten()
         # Contar quantos pontos estão dentro do raio (excluindo o próprio ponto)
         neighbors = np.sum(distances < radius) - 1
-        if neighbors > 10:  # Se um ponto tiver no mínimo 10 vizinhos, terminar a busca
+        if neighbors >= 10:  # Se um ponto tiver no mínimo 10 vizinhos, terminar a busca
             best_point = point
             break 
     return best_point
@@ -399,7 +399,7 @@ for i in range(2):
     text_legend = (
         f'TIC ID : {exoplanet["TIC_ID"]}\n'
         f'Period : {exoplanet["period"]:.2f} Days\n'
-        f'Transit : {exoplanet["time_transit"]} Hours'
+        f'Transit : {exoplanet["time_transit"]:.2f} Hours'
     ) 
     axs.scatter(t, f, s = 1, label = text_legend, color = 'indigo')
     axs.set_title("Centered Superimposed Light Curve", fontsize = 16)
