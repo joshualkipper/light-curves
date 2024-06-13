@@ -30,8 +30,8 @@ Informações do exoplaneta que será analisado.
 """
 exoplanet = {
     'TIC_ID' : 149603524,
-    'period' : 4.4119378, # dias
-    'time_transit' : 3.65, # em horas
+    'period' : 4.4119378, # Dias
+    'time_transit' : 3.65, # Horas
     'sectors': (1,2,3,4,6,7,8,9,10)  
     }
 #%%
@@ -169,7 +169,7 @@ if SHOW_ALTERNATIVE_METHOD:
 
 #%%
 """
-Aqui são plotados todas as curvas do 'lc_collection' normalizados um de cada vez
+Aqui são plotados todas as curvas do 'lc_collection' normalizados um de cada vez.
 """
 # Exibir todos os gráficos de todas as curvas de luz
 if SHOW_ALTERNATIVE_METHOD:
