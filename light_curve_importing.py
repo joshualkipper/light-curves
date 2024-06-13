@@ -7,7 +7,7 @@ Código para a automatização na obtenção das curvas de luz pelo telescópio 
 """
 Variáveis de controle.
 """
-SEE_SLA = False
+IN_ASTROLAB = True
 #%%
 """
 Bibliotecas a serem importadas:
@@ -30,11 +30,16 @@ import math as mt # versão 3.10.12
 """
 Conjunto de informações sobre exoplanetas. 
 """
+if IN_ASTROLAB:
+    path = '/graduacao/joshuakipper/light-curves/data_exoplanets.csv'
+else : 
+    path = '/home/joshua/Documentos/Iniciação Científica/light-curves/data_exoplanets.csv'
 # O comando pd.read_csv() necessita de um caminho para o arquivo.cvs que será aberto
-df_exoplanets = pd.read_csv('/home/joshua/Documentos/Iniciação Científica/light-curves/data_exoplanets.csv')
+df_exoplanets = pd.read_csv(path)
 # Por limitaçoes escolhemos somente exoplanetas com raios maiores que 10 raios terrestres
 # Para evitar absurdos limitamos o raio dos exoplanetas à 30 raios terrestres 
-df_aux = df_exoplanets[(df_exoplanets['Planet_Radius'] > 10) & (df_exoplanets['Planet_Radius'] < 30)]
+df_aux = df_exoplanets[(df_exoplanets['Planet_Radius'] > 10) & (df_exoplanets['Planet_Radius'] < 30) & 
+                      (df_exoplanets['Period'] > 1) & (df_exoplanets['Period'] < 10)]
 # Reseta o indíce para ficar contínuo de [0,n]
 df_exojup = df_aux.reset_index(drop=True) 
 # Lista de dados necessários
@@ -42,6 +47,7 @@ planets = df_exojup.TIC
 sectors = df_exojup.Sectors
 period = df_exojup.Period
 author = df_exojup.Detection
+time_transit = df_exojup.Duration
 
 #%%
 def epslon(flux_medium, flux_minimun):
@@ -73,7 +79,7 @@ def light_curve(planets, author, sectors, period):
     search_result = lk.search_lightcurve(f'TIC {planets}',
                                           cadence ='short',     
                                           mission = 'TESS',     
-                                          author = author, 
+                                          author = 'SPOC', 
                                           sector = sectors
                                           )
     
@@ -105,22 +111,46 @@ def light_curve(planets, author, sectors, period):
 
 #%%
 def plot_light_curve(lc_set):
+    i = -1
     for lc in lc_set:
-        plt.figure()
-        lc.scatter()
-        plt.title('Light Curve Folder')
-        plt.legend()
-        plt.show()
+        i = i + 1
+        t = lc.time.value 
+        f = lc.flux
+        # Constante para seccionar o transito no tempo adequeado 
+        section = (time_transit[i] / 24) * 2
+        fig, axs = plt.subplots(figsize = (10,5), dpi = 200)
+        text_legend = (
+            f'TIC ID : {planets[i]}\n'
+            f'Period : {period[i]:.2f} Days\n'
+            f'Transit : {time_transit[i]:.2f} Hours'
+        ) 
+        axs.scatter(t, f, s = 1, label = text_legend, color = 'indigo')
+        axs.set_title("Centered Superimposed Light Curve", fontsize = 16)
+        axs.legend(loc='upper center', fontsize = 11, edgecolor = 'black')
+        # Configurações dos eixos e da borda
+        for spine in axs.spines.values():
+            spine.set_color('black')   # Cor da borda
+            spine.set_linewidth(1)     # Largura da borda
+        axs.xaxis.set_minor_locator(ticker.AutoMinorLocator(5)) # N° de risquinhos em x
+        axs.yaxis.set_minor_locator(ticker.AutoMinorLocator(5)) # || || || em y
+        # Ajustando o tamanho, cor e direção dos risquinhos
+        axs.tick_params(which = 'minor', length = 5, color = 'black', direction = 'in')
+        axs.tick_params(which = 'major', length = 8, color = 'black', direction = 'in')
+        axs.tick_params(axis = 'both', labelsize = 12)
+        axs.set_xlabel("Phase[Days]", fontsize = 12)
+        axs.set_ylabel("Normalized Flux", fontsize = 12)
+        #axs.set_xlim(-section, section) # Corte no eixo temporal
     return plt
 
 #%%
-lc_set = []
-for i in range(0,1):
+lc_superposition = []
+for i in range(0,30):
+    print(i)
     sec = [int(numero) for numero in df_exojup.Sectors[i].split(",")]
     lc_o, lc_n, lc_s = light_curve(planets[i], author[i], sec, period[i])
-    lc_set.append(lc_s)
+    lc_superposition.append(lc_s)
 
 #%%
-plot_light_curve(lc_set).show()
+plot_light_curve(lc_superposition).show()
 
 #%%
