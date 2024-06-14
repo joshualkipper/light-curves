@@ -29,10 +29,10 @@ import math as mt # versão 3.10.12
 Informações do exoplaneta que será analisado.
 """
 exoplanet = {
-    'TIC_ID' : 165987272,
-    'period' : 7.8456075, # Dias
-    'time_transit' : 5.892, # Horas
-    'sectors': (2,29,69)  
+    'TIC_ID' : 299087490,
+    'period' : 38.478761309913, # Dias
+    'time_transit' : 5.1869736832286, # Horas
+    'sectors': (40,41,53,54,55)  
     }
 #%%
 """
@@ -128,7 +128,7 @@ if SHOW_PLOT:
     axs.tick_params(which = 'minor', length = 5, color = 'black', direction = 'in')
     axs.tick_params(which = 'major', length = 8, color = 'black', direction = 'in')
     axs.tick_params(axis = 'both', labelsize = 12)
-    axs.set_xlabel(f"Phase[Days]", fontsize = 12)
+    axs.set_xlabel("Phase[Days]", fontsize = 12)
     axs.set_ylabel("Normalized Flux", fontsize = 12)
     plt.show()
 
@@ -163,7 +163,7 @@ if SHOW_ALTERNATIVE_METHOD:
         axs.tick_params(which = 'minor', length = 5, color = 'black', direction = 'in')
         axs.tick_params(which = 'major', length = 8, color = 'black', direction = 'in')
         axs.tick_params(axis = 'both', labelsize = 12)
-        axs.set_xlabel(f"Phase[Days]", fontsize = 12)
+        axs.set_xlabel("Phase[Days]", fontsize = 12)
         axs.set_ylabel("Normalized Flux", fontsize = 12)
         plt.show()
 
@@ -242,7 +242,7 @@ if SHOW_ALTERNATIVE_METHOD:
         axs.tick_params(which = 'minor', length = 5, color = 'black', direction = 'in')
         axs.tick_params(which = 'major', length = 8, color = 'black', direction = 'in')
         axs.tick_params(axis = 'both', labelsize = 12)
-        axs.set_xlabel(f"Phase[Days]", fontsize = 12)
+        axs.set_xlabel("Phase[Days]", fontsize = 12)
         axs.set_ylabel("Normalized Flux", fontsize = 12)
         plt.show()
 
@@ -278,7 +278,7 @@ if SHOW_PLOT:
     axs.tick_params(which = 'minor', length = 5, color = 'black', direction = 'in')
     axs.tick_params(which = 'major', length = 8, color = 'black', direction = 'in')
     axs.tick_params(axis = 'both', labelsize = 12)
-    axs.set_xlabel(f"Phase[Days]", fontsize = 12)
+    axs.set_xlabel("Phase[Days]", fontsize = 12)
     axs.set_ylabel("Normalized Flux", fontsize = 12)
     plt.show()
 
@@ -321,7 +321,7 @@ if SHOW_ALTERNATIVE_METHOD:
         axs.tick_params(which = 'minor', length = 5, color = 'black', direction = 'in')
         axs.tick_params(which = 'major', length = 8, color = 'black', direction = 'in')
         axs.tick_params(axis = 'both', labelsize = 12)
-        axs.set_xlabel(f"Phase[Days]", fontsize = 12)
+        axs.set_xlabel("Phase[Days]", fontsize = 12)
         axs.set_ylabel("Normalized Flux", fontsize = 12)
         axs.set_xlim(-section, section) # Corte no eixo temporal
         plt.show()
