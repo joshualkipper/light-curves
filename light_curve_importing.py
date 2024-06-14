@@ -31,22 +31,20 @@ import math as mt # versão 3.10.12
 Conjunto de informações sobre exoplanetas. 
 """
 if IN_ASTROLAB:
-    path = '/graduacao/joshuakipper/light-curves/data_exoplanets.csv'
+    path = '/graduacao/joshuakipper/light-curves/data_exoplanets_KP.csv'
 else : 
     path = '/home/joshua/Documentos/Iniciação Científica/light-curves/data_exoplanets.csv'
 # O comando pd.read_csv() necessita de um caminho para o arquivo.cvs que será aberto
 df_exoplanets = pd.read_csv(path)
 # Por limitaçoes escolhemos somente exoplanetas com raios maiores que 10 raios terrestres
 # Para evitar absurdos limitamos o raio dos exoplanetas à 30 raios terrestres 
-df_aux = df_exoplanets[(df_exoplanets['Planet_Radius'] > 10) & (df_exoplanets['Planet_Radius'] < 30) & 
-                      (df_exoplanets['Period'] > 1) & (df_exoplanets['Period'] < 10)]
+df_aux = df_exoplanets[(df_exoplanets['Planet_Radius'] > 10) & (df_exoplanets['Planet_Radius'] < 30)]
 # Reseta o indíce para ficar contínuo de [0,n]
 df_exojup = df_aux.reset_index(drop=True) 
 # Lista de dados necessários
 planets = df_exojup.TIC
 sectors = df_exojup.Sectors
 period = df_exojup.Period
-author = df_exojup.Detection
 time_transit = df_exojup.Duration
 
 #%%
@@ -73,7 +71,7 @@ def neighborhood(points, radius):
     return best_point
 
 #%%
-def light_curve(planets, author, sectors, period):
+def light_curve(planets, sectors, period):
     
     # Pesquisa todas as curvas com esse conjunto de endereçoes 
     search_result = lk.search_lightcurve(f'TIC {planets}',
@@ -144,10 +142,10 @@ def plot_light_curve(lc_set):
 
 #%%
 lc_superposition = []
-for i in range(0,30):
+for i in range(1,2):
     print(i)
     sec = [int(numero) for numero in df_exojup.Sectors[i].split(",")]
-    lc_o, lc_n, lc_s = light_curve(planets[i], author[i], sec, period[i])
+    lc_o, lc_n, lc_s = light_curve(planets[i], sec, period[i])
     lc_superposition.append(lc_s)
 
 #%%
