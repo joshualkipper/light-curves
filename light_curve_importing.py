@@ -7,7 +7,11 @@ Código para a automatização na obtenção das curvas de luz pelo telescópio 
 """
 Variáveis de controle.
 """
-IN_ASTROLAB = True
+FILTER = False
+if FILTER:
+    R_MIN, R_MAX = 10, 30 # Raios terrestres
+    P_MIN, P_MAX = 1, 2 # Dias
+DOWNLOAD_PLOT = True
 #%%
 """
 Bibliotecas a serem importadas:
@@ -25,27 +29,30 @@ import matplotlib.ticker as ticker # versão 3.5.1
 import pandas as pd # versão 2.2.1
 import scipy.spatial as ss # versão 1.8.0
 import math as mt # versão 3.10.12
+import os # versão 3.10.12
 
 #%%
 """
 Conjunto de informações sobre exoplanetas. 
 """
-if IN_ASTROLAB:
-    path = '/graduacao/joshuakipper/light-curves/data_exoplanets_KP.csv'
-else : 
-    path = '/home/joshua/Documentos/Iniciação Científica/light-curves/data_exoplanets.csv'
-# O comando pd.read_csv() necessita de um caminho para o arquivo.cvs que será aberto
-df_exoplanets = pd.read_csv(path)
-# Por limitaçoes escolhemos somente exoplanetas com raios maiores que 10 raios terrestres
-# Para evitar absurdos limitamos o raio dos exoplanetas à 30 raios terrestres 
-df_aux = df_exoplanets[(df_exoplanets['Planet_Radius'] > 10) & (df_exoplanets['Planet_Radius'] < 30)]
+path = '/home/joshua/Documentos/iniciacao_cientifica/light-curves/data_exoplanets/targets_KP.csv'
+# O comando pd.read_csv() necessita de um caminho para o arquivo.arq que será aberto
+df_data = pd.read_csv(path)
+
+if FILTER: 
+    df_exoplanets = df_data[(df_data['Planet_Radius'] > R_MIN) 
+                           & (df_data['Planet_Radius'] < R_MAX)
+                           & (df_data['Period'] > P_MIN)
+                           & (df_data['Period'] < P_MAX)]
+else :
+    df_exoplanets = df_data
 # Reseta o indíce para ficar contínuo de [0,n]
-df_exojup = df_aux.reset_index(drop=True) 
+df_exoplanets = df_exoplanets.reset_index(drop=True) 
 # Lista de dados necessários
-planets = df_exojup.TIC
-sectors = df_exojup.Sectors
-period = df_exojup.Period
-time_transit = df_exojup.Duration
+planets = df_exoplanets.TIC
+sectors = df_exoplanets.Sectors
+period = df_exoplanets.Period
+time_transit = df_exoplanets.Duration
 
 #%%
 def epslon(flux_medium, flux_minimun):
@@ -65,7 +72,7 @@ def neighborhood(points, radius):
         distances = ss.distance.cdist([point], points, 'euclidean').flatten()
         # Contar quantos pontos estão dentro do raio (excluindo o próprio ponto)
         neighbors = np.sum(distances < radius) - 1
-        if neighbors > 10:  # Se um ponto tiver no mínimo 10 vizinhos, terminar a busca
+        if neighbors >= 10:  # Se um ponto tiver no mínimo 10 vizinhos, terminar a busca
             best_point = point
             break 
     return best_point
@@ -108,47 +115,66 @@ def light_curve(planets, sectors, period):
     return lc_collection, lc_normal, lc_superposition
 
 #%%
-def plot_light_curve(lc_set):
+def plot_light_curve_superposition(lc_set):
     i = -1
+    j_list = [False, True]
     for lc in lc_set:
         i = i + 1
-        t = lc.time.value 
-        f = lc.flux
-        # Constante para seccionar o transito no tempo adequeado 
-        section = (time_transit[i] / 24) * 2
-        fig, axs = plt.subplots(figsize = (10,5), dpi = 200)
-        text_legend = (
-            f'TIC ID : {planets[i]}\n'
-            f'Period : {period[i]:.2f} Days\n'
-            f'Transit : {time_transit[i]:.2f} Hours'
-        ) 
-        axs.scatter(t, f, s = 1, label = text_legend, color = 'indigo')
-        axs.set_title("Centered Superimposed Light Curve", fontsize = 16)
-        axs.legend(loc='upper center', fontsize = 11, edgecolor = 'black')
-        # Configurações dos eixos e da borda
-        for spine in axs.spines.values():
-            spine.set_color('black')   # Cor da borda
-            spine.set_linewidth(1)     # Largura da borda
-        axs.xaxis.set_minor_locator(ticker.AutoMinorLocator(5)) # N° de risquinhos em x
-        axs.yaxis.set_minor_locator(ticker.AutoMinorLocator(5)) # || || || em y
-        # Ajustando o tamanho, cor e direção dos risquinhos
-        axs.tick_params(which = 'minor', length = 5, color = 'black', direction = 'in')
-        axs.tick_params(which = 'major', length = 8, color = 'black', direction = 'in')
-        axs.tick_params(axis = 'both', labelsize = 12)
-        axs.set_xlabel("Phase[Days]", fontsize = 12)
-        axs.set_ylabel("Normalized Flux", fontsize = 12)
-        #axs.set_xlim(-section, section) # Corte no eixo temporal
-    return plt
+        k = -1
+        for j in j_list:
+            k = k + 1
+            t = lc.time.value 
+            f = lc.flux
+            # Constante para seccionar o transito no tempo adequeado 
+            section = (time_transit[i] / 24) * 2
+            fig, axs = plt.subplots(figsize = (10,5), dpi = 200)
+            text_legend = (
+                f'TIC ID : {planets[i]}\n'
+                f'Period : {period[i]:.2f} Days\n'
+                f'Transit : {time_transit[i]:.2f} Hours'
+            ) 
+            axs.scatter(t, f, s = 1, label = text_legend, color = 'indigo')
+            axs.set_title("Centered Superimposed Light Curve", fontsize = 16)
+            axs.legend(loc='upper center', fontsize = 11, edgecolor = 'black')
+            # Configurações dos eixos e da borda
+            for spine in axs.spines.values():
+                spine.set_color('black')   # Cor da borda
+                spine.set_linewidth(1)     # Largura da borda
+            axs.xaxis.set_minor_locator(ticker.AutoMinorLocator(5)) # N° de risquinhos em x
+            axs.yaxis.set_minor_locator(ticker.AutoMinorLocator(5)) # || || || em y
+            # Ajustando o tamanho, cor e direção dos risquinhos
+            axs.tick_params(which = 'minor', length = 5, color = 'black', direction = 'in')
+            axs.tick_params(which = 'major', length = 8, color = 'black', direction = 'in')
+            axs.tick_params(axis = 'both', labelsize = 12)
+            axs.set_xlabel("Phase[Days]", fontsize = 12)
+            axs.set_ylabel("Normalized Flux", fontsize = 12)
+            if j:
+                axs.set_xlim(-section, section) # Corte no eixo temporal
+            # Download das curvas de luz analisadas 
+            if DOWNLOAD_PLOT:
+                name = [f'lc(TIC_ID:{planets[i]}).png',
+                        f'lc_section(TIC_ID:{planets[i]}).png']
+                path_base = '/home/joshua/Documentos/iniciacao_cientifica/light-curves/examples'
+                new_directory = os.path.join(path_base, f'TIC_ID:{planets[i]}')
+                os.makedirs(new_directory, exist_ok=True)
+                path_plots = os.path.join(new_directory, name[k])
+                plt.savefig(path_plots)
+                plt.close()
+            plt.show()
 
 #%%
+lc_collection = []
+lc_normal = []
 lc_superposition = []
-for i in range(1,2):
+for i in range(len(planets)):
     print(i)
-    sec = [int(numero) for numero in df_exojup.Sectors[i].split(",")]
-    lc_o, lc_n, lc_s = light_curve(planets[i], sec, period[i])
+    sec = [int(numero) for numero in df_exoplanets.Sectors[i].split(",")]
+    lc_c, lc_n, lc_s = light_curve(planets[i], sec, period[i])
+    lc_collection.append(lc_c)
+    lc_normal.append(lc_n)
     lc_superposition.append(lc_s)
+#%%
+plot_light_curve_superposition(lc_superposition)
 
 #%%
-plot_light_curve(lc_superposition).show()
 
-#%%
