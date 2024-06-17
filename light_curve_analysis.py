@@ -23,24 +23,26 @@ import matplotlib.ticker as ticker # versão 3.5.1
 import pandas as pd # versão 2.2.1
 import scipy.spatial as ss # versão 1.8.0
 import math as mt # versão 3.10.12
+import os
 
 #%%
 """
 Informações do exoplaneta que será analisado.
 """
 exoplanet = {
-    'TIC_ID' : 299087490,
-    'period' : 38.478761309913, # Dias
-    'time_transit' : 5.1869736832286, # Horas
-    'sectors': (40,41,53,54,55)  
+    'TIC_ID' : 190998418,
+    'period' : 2.87929997, # Dias
+    'time_transit' : 2.7497683357845, # Horas
+    'sectors': (17,57)  
     }
 #%%
 """
 Variáveis de controle.
 """
 SHOW_PLOT = True
-SHOW_INFORMATION = True
-SHOW_ALTERNATIVE_METHOD = True
+SHOW_INFORMATION = False
+SHOW_ALTERNATIVE_METHOD = False
+DOWNLOAD_PLOT = False
 
 #%%
 
@@ -388,8 +390,8 @@ Segunda tentativa de centralizar os dados usando a vizinhança do ponto minímo.
 """
 lc_superposition = lc_normal.fold(exoplanet['period'], time_inicial + new_time_min[0])
 # Gráfico com foco no transito superposto
-for i in range(2):
-    constant_time = [1, 24] # Lista para mudança da fase
+for i in range(3):
+    constant_time = [1, 1, 24] # Lista para mudança da fase
     # Alteracoes para conseguir usar o plt.plot()
     t = lc_superposition.time.value * constant_time[i]
     f = lc_superposition.flux
@@ -414,10 +416,20 @@ for i in range(2):
     axs.tick_params(which = 'minor', length = 5, color = 'black', direction = 'in')
     axs.tick_params(which = 'major', length = 8, color = 'black', direction = 'in')
     axs.tick_params(axis = 'both', labelsize = 12)
-    text_time = ['Days', 'Hours']
+    text_time = ['Days', 'Days', 'Hours']
     axs.set_xlabel(f"Phase[{text_time[i]}]", fontsize = 12)
     axs.set_ylabel("Normalized Flux", fontsize = 12)
-    axs.set_xlim(-section, section) # Corte no eixo temporal
+    if i != 0:
+        axs.set_xlim(-section, section) # Corte no eixo temporal
+    if DOWNLOAD_PLOT:
+        name = [f'lc(TIC_ID:{exoplanet["TIC_ID"]}).png',
+                f'lc_section_days(TIC_ID:{exoplanet["TIC_ID"]}).png',
+                f'lc_section_hours(TIC_ID:{exoplanet["TIC_ID"]}).png']
+        path_base = '/home/joshua/Documentos/iniciacao_cientifica/light-curves/examples'
+        new_directory = os.path.join(path_base, f'TIC_ID:{exoplanet["TIC_ID"]}')
+        os.makedirs(caminho_pasta, exist_ok=True)
+        path_plots = os.path.join(new_directory, name[i])
+        plt.savefig(path_plots)
     plt.show()
 
 #%%
