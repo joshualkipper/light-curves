@@ -419,6 +419,7 @@ for i in range(3):
     text_time = ['Days', 'Days', 'Hours']
     axs.set_xlabel(f"Phase[{text_time[i]}]", fontsize = 12)
     axs.set_ylabel("Normalized Flux", fontsize = 12)
+    axs.set_ylim(flux_minimun - radius/10, abs(flux_medium-flux_minimun) + flux_medium + radius/10)
     if i != 0:
         axs.set_xlim(-section, section) # Corte no eixo temporal
     if DOWNLOAD_PLOT:
