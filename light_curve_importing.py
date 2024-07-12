@@ -7,11 +7,13 @@ Código para a automatização na obtenção das curvas de luz pelo telescópio 
 """
 Variáveis de controle.
 """
+ASTROLAB = True
 FILTER = False
 if FILTER:
-    R_MIN, R_MAX = 10, 30 # Raios terrestres
-    P_MIN, P_MAX = 1, 2 # Dias
-DOWNLOAD_PLOT = True
+    R_MIN, R_MAX = 10, 12 # Raios terrestres
+    P_MIN, P_MAX = 1, 5 # Dias
+DOWNLOAD_PLOT = False
+LIMIT_Y = True
 #%%
 """
 Bibliotecas a serem importadas:
@@ -35,7 +37,11 @@ import os # versão 3.10.12
 """
 Conjunto de informações sobre exoplanetas. 
 """
-path = '/home/joshua/Documentos/iniciacao_cientifica/light-curves/data_exoplanets/targets_KP.csv'
+
+if ASTROLAB :
+    path = '/graduacao/joshuakipper/Documentos/ic/exoplanetas/light-curves/data_exoplanets/targets_KP.csv'
+else :
+    path = '/home/joshua/Documentos/iniciacao_cientifica/light-curves/data_exoplanets/targets_KP.csv'
 # O comando pd.read_csv() necessita de um caminho para o arquivo.arq que será aberto
 df_data = pd.read_csv(path)
 
@@ -53,6 +59,28 @@ planets = df_exoplanets.TIC
 sectors = df_exoplanets.Sectors
 period = df_exoplanets.Period
 time_transit = df_exoplanets.Duration
+star_temperature = df_exoplanets.Duration
+star_mass = df_exoplanets.Duration
+
+#%%
+def classify_star(star_temperature):
+
+    if star_temperature >= 30000:
+        return "O"
+    elif 10000 <= star_temperature < 30000:
+        return "B"
+    elif 7500 <= star_temperature < 10000:
+        return "A"
+    elif 6000 <= star_temperature < 7500:
+        return "F"
+    elif 5200 <= star_temperature < 6000:
+        return "G"
+    elif 3700 <= star_temperature < 5200:
+        return "K"
+    elif 2400 <= star_temperature < 3700:
+        return "M"
+    else:
+        return "ERRO"
 
 #%%
 def epslon(flux_medium, flux_minimun):
@@ -121,21 +149,29 @@ def plot_light_curve_superposition(lc_set):
     for lc in lc_set:
         i = i + 1
         k = -1
-        for j in j_list:
+        for j in j_list: 
             k = k + 1
             t = lc.time.value 
             f = lc.flux
             # Constante para seccionar o transito no tempo adequeado 
             section = (time_transit[i] / 24) * 2
             fig, axs = plt.subplots(figsize = (10,5), dpi = 200)
-            text_legend = (
+            exoplanet_legend = (
                 f'TIC ID : {planets[i]}\n'
                 f'Period : {period[i]:.2f} Days\n'
                 f'Transit : {time_transit[i]:.2f} Hours'
             ) 
-            axs.scatter(t, f, s = 1, label = text_legend, color = 'indigo')
+            star_legend = (
+                f'Star Type : {classify_star(star_temperature[i])}\n'
+                f'Star Mass : {star_temperature[i]:.2f}\n'
+                f'Star Mag : {time_transit[i]:.2f}'
+            ) 
+            exoplanet = axs.scatter(t, f, s = 1, label = exoplanet_legend, color = 'indigo')
+            star = axs.scatter(0, 0, s = 1, label = star_legend, color = 'indigo')
             axs.set_title("Centered Superimposed Light Curve", fontsize = 16)
-            axs.legend(loc='upper center', fontsize = 11, edgecolor = 'black')
+            first_legend = axs.legend(handles = [exoplanet], loc='upper left', fontsize = 11, edgecolor = 'black')
+            axs.add_artist(first_legend) 
+            axs.legend(handles = [star], loc='upper right', fontsize = 11, edgecolor = 'black')           
             # Configurações dos eixos e da borda
             for spine in axs.spines.values():
                 spine.set_color('black')   # Cor da borda
@@ -148,6 +184,11 @@ def plot_light_curve_superposition(lc_set):
             axs.tick_params(axis = 'both', labelsize = 12)
             axs.set_xlabel("Phase[Days]", fontsize = 12)
             axs.set_ylabel("Normalized Flux", fontsize = 12)
+            radius = epslon(lc.flux.mean(), lc.flux.min())
+            if LIMIT_Y:
+                axs.set_ylim(lc.flux.min() - radius/10, 
+                             abs(lc.flux.min()-lc.flux.mean()) + lc.flux.mean() + radius/10)
+
             if j:
                 axs.set_xlim(-section, section) # Corte no eixo temporal
             # Download das curvas de luz analisadas 
