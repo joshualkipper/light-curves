@@ -8,12 +8,9 @@ Código para a automatização na obtenção das curvas de luz pelo telescópio 
 Variáveis de controle.
 """
 ASTROLAB = True
-FILTER = False
-if FILTER:
-    R_MIN, R_MAX = 10, 12 # Raios terrestres
-    P_MIN, P_MAX = 1, 5 # Dias
 DOWNLOAD_PLOT = False
 LIMIT_Y = True
+
 #%%
 """
 Bibliotecas a serem importadas:
@@ -30,8 +27,8 @@ import matplotlib.pyplot as plt # versão 3.5.1
 import matplotlib.ticker as ticker # versão 3.5.1
 import pandas as pd # versão 2.2.1
 import scipy.spatial as ss # versão 1.8.0
-import math as mt # versão 3.10.12
-import os # versão 3.10.12
+import math as mt # versão 3.12.4
+import os # versão 3.12.4
 
 #%%
 """
@@ -39,28 +36,23 @@ Conjunto de informações sobre exoplanetas.
 """
 
 if ASTROLAB :
-    path = '/graduacao/joshuakipper/Documentos/ic/exoplanetas/light-curves/data_exoplanets/targets_KP.csv'
+    path = '/graduacao/joshuakipper/Documentos/ic/exoplanetas/light-curves/data_exoplanets/teste1.csv'
 else :
     path = '/home/joshua/Documentos/iniciacao_cientifica/light-curves/data_exoplanets/targets_KP.csv'
 # O comando pd.read_csv() necessita de um caminho para o arquivo.arq que será aberto
-df_data = pd.read_csv(path)
+df_exoplanets = pd.read_csv(path)
 
-if FILTER: 
-    df_exoplanets = df_data[(df_data['Planet_Radius'] > R_MIN) 
-                           & (df_data['Planet_Radius'] < R_MAX)
-                           & (df_data['Period'] > P_MIN)
-                           & (df_data['Period'] < P_MAX)]
-else :
-    df_exoplanets = df_data
-# Reseta o indíce para ficar contínuo de [0,n]
-df_exoplanets = df_exoplanets.reset_index(drop=True) 
+#%%
 # Lista de dados necessários
-planets = df_exoplanets.TIC
-sectors = df_exoplanets.Sectors
-period = df_exoplanets.Period
-time_transit = df_exoplanets.Duration
-star_temperature = df_exoplanets.Duration
-star_mass = df_exoplanets.Duration
+planet_names = df_exoplanets['TOI']
+planet_rays = df_exoplanets['Planet Radius (R_Earth)']
+orbital_periods = df_exoplanets['Planet Radius (R_Earth)']
+transits_duration = df_exoplanets['Period (days)']
+star_names = df_exoplanets['TIC ID']
+star_rays = df_exoplanets['Stellar Radius (R_Sun)']
+star_masses = df_exoplanets['Stellar Mass (M_Sun)']
+star_temperature = df_exoplanets['Stellar Eff Temp (K)']
+star_magnitudes = df_exoplanets['TESS Mag']
 
 #%%
 def classify_star(star_temperature):
@@ -106,15 +98,14 @@ def neighborhood(points, radius):
     return best_point
 
 #%%
-def light_curve(planets, sectors, period):
+def light_curve(star_name, orbital_period):
     
     # Pesquisa todas as curvas com esse conjunto de endereçoes 
-    search_result = lk.search_lightcurve(f'TIC {planets}',
-                                          cadence ='short',     
-                                          mission = 'TESS',     
-                                          author = 'SPOC', 
-                                          sector = sectors
-                                          )
+    search_result = lk.search_lightcurve(f'TIC {star_name}',
+                                         cadence ='short',     
+                                         mission = 'TESS',     
+                                         author = 'SPOC', 
+                                         )
     
     # Downloado de todas as curvas encontradas na pesquisa 
     lc_collection = search_result.download_all()
@@ -127,7 +118,7 @@ def light_curve(planets, sectors, period):
     time_initial = lc_normal.time.value[0] 
     
     # Primeira dobra para sobrepor o fluxo e reduzir o tempo
-    lc_fold = lc_normal.fold(period, time_initial)
+    lc_fold = lc_normal.fold(orbital_period, time_initial)
     
     # Encontrando o fluxo de menor valor no transito 
     radius = epslon(lc_fold.flux.mean(), lc_fold.flux.min())
@@ -138,12 +129,13 @@ def light_curve(planets, sectors, period):
     time_at_flux_min = neighborhood(points, radius)
     
     # Segunda dobra com centralização temporal 
-    lc_superposition = lc_normal.fold(period, time_initial + time_at_flux_min[0])
+    lc_superposition = lc_normal.fold(orbital_period, time_initial + time_at_flux_min[0])
     
     return lc_collection, lc_normal, lc_superposition
 
 #%%
-def plot_light_curve_superposition(lc_set):
+def plot_light_curve_superposition(lc_set, transit_duration, planet_name, orbital_period, 
+                                   star_temperature, star_magnitude):
     i = -1
     j_list = [False, True]
     for lc in lc_set:
@@ -154,17 +146,17 @@ def plot_light_curve_superposition(lc_set):
             t = lc.time.value 
             f = lc.flux
             # Constante para seccionar o transito no tempo adequeado 
-            section = (time_transit[i] / 24) * 2
+            section = (transit_duration[i] / 24) * 2
             fig, axs = plt.subplots(figsize = (10,5), dpi = 200)
             exoplanet_legend = (
-                f'TIC ID : {planets[i]}\n'
-                f'Period : {period[i]:.2f} Days\n'
-                f'Transit : {time_transit[i]:.2f} Hours'
+                f'TOI : {planet_name[i]}\n'
+                f'Period : {orbital_period[i]:.2f} Days\n'
+                f'Transit : {transit_duration[i]:.2f} Hours'
             ) 
             star_legend = (
                 f'Star Type : {classify_star(star_temperature[i])}\n'
-                f'Star Mass : {star_temperature[i]:.2f}\n'
-                f'Star Mag : {time_transit[i]:.2f}'
+                #f'Star Mass : {star_mass[i]:.2f}\n'
+                f'Star Mag : {star_magnitude[i]:.2f}'
             ) 
             exoplanet = axs.scatter(t, f, s = 1, label = exoplanet_legend, color = 'indigo')
             star = axs.scatter(0, 0, s = 1, label = star_legend, color = 'indigo')
@@ -193,10 +185,10 @@ def plot_light_curve_superposition(lc_set):
                 axs.set_xlim(-section, section) # Corte no eixo temporal
             # Download das curvas de luz analisadas 
             if DOWNLOAD_PLOT:
-                name = [f'lc(TIC_ID:{planets[i]}).png',
-                        f'lc_section(TIC_ID:{planets[i]}).png']
+                name = [f'lc({planet_names[i]}).png',
+                        f'lc_section({planet_names[i]}).png']
                 path_base = '/home/joshua/Documentos/iniciacao_cientifica/light-curves/examples'
-                new_directory = os.path.join(path_base, f'TIC_ID:{planets[i]}')
+                new_directory = os.path.join(path_base, f':{planet_names[i]}')
                 os.makedirs(new_directory, exist_ok=True)
                 path_plots = os.path.join(new_directory, name[k])
                 plt.savefig(path_plots)
@@ -207,15 +199,14 @@ def plot_light_curve_superposition(lc_set):
 lc_collection = []
 lc_normal = []
 lc_superposition = []
-for i in range(len(planets)):
+for i in range(len(planet_names)):
     print(i)
-    sec = [int(numero) for numero in df_exoplanets.Sectors[i].split(",")]
-    lc_c, lc_n, lc_s = light_curve(planets[i], sec, period[i])
+    lc_c, lc_n, lc_s = light_curve(star_names[i], orbital_periods[i])
     lc_collection.append(lc_c)
     lc_normal.append(lc_n)
     lc_superposition.append(lc_s)
 #%%
-plot_light_curve_superposition(lc_superposition)
+plot_light_curve_superposition(lc_superposition, transits_duration, planet_names, orbital_periods, 
+                               star_temperature, star_magnitudes)
 
 #%%
-
