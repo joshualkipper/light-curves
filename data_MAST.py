@@ -11,7 +11,7 @@ tabela contendo todos os dados necessários para a análise das curvas de luz.
 """
 #%%
 """
-Variáveis de controle.
+Variáveis de controle
 """
 SEE_DF_COMPLETE = True
 DOWNLOAD_DF = False
