@@ -39,19 +39,22 @@ dados_filtrados = dados[colunas_interesse].reset_index(drop=True)
 #%%
 # Aplicar filtros específicos para exoplanetas de interesse
 exoplanetas_filtrados = dados_filtrados[
-    (dados_filtrados['Planet Radius (R_Earth)'] > 10.0) &
-    (dados_filtrados['Planet Radius (R_Earth)'] < 12.0) &
-    (dados_filtrados['TESS Mag'] > 13.0) &
-    (dados_filtrados['TESS Mag'] < 15.0) &
-    (dados_filtrados['Period (days)'] < 5.0) &
-    (dados_filtrados['TESS Disposition'] == 'KP') &
-    (dados_filtrados['Detection'] == 'SPOC')
+    (dados_filtrados['TIC ID'].isin([284475976, 38846515, 25155310]))
+    # (dados_filtrados['Planet Radius (R_Earth)'] > 10.0) &
+    # (dados_filtrados['Planet Radius (R_Earth)'] < 12.0) &
+    # (dados_filtrados['TESS Mag'] > 13.0) &
+    # (dados_filtrados['TESS Mag'] < 15.0) &
+    # (dados_filtrados['Period (days)'] < 5.0) &
+    # (dados_filtrados['TESS Disposition'] == 'KP') &
+    # (dados_filtrados['Detection'] == 'SPOC')
     ].reset_index(drop=True)
 
 #%%
 # Diretório e nome do arquivo de saída
-diretorio = '/graduacao/joshuakipper/Documents/IC/Exoplanetas/light-curves/Dados_Exoplanetas/'
-nome_arquivo = 'data_ExoFOP.csv'
+#diretorio = '/graduacao/joshuakipper/Documents/IC/Exoplanetas/light-curves/Dados_Exoplanetas/'
+diretorio = '/home/joshua/Documentos/ufrgs/light-curves-main/dados_exoplanetas/'
+#nome_arquivo = 'data_ExoFOP.csv'
+nome_arquivo = 'data_ExoFOP(taina).csv'
 arquivo_saida = diretorio + nome_arquivo
 
 #%%
