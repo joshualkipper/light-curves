@@ -153,7 +153,7 @@ def fase_centrada(t, f0, t0):
 def estimar_t0_pelo_minimo_do_modelo(t, y_fit):
     return float(t[np.argmin(y_fit)])
 
-def plotar_dobramento_centralizado(curva, params, f0, t0=None, tic_id=None, salvar=False, pasta="plots", n_model=2000):
+def plotar_dobramento_centralizado(curva, params, f0, i, t0=None, tic_id=None, salvar=False, pasta="plots", n_model=2000):
     t, y = curva.time.value, curva.flux.value
     y_fit_obs = avaliar_fourier(t, params, f0)
     if t0 is None:
@@ -163,96 +163,99 @@ def plotar_dobramento_centralizado(curva, params, f0, t0=None, tic_id=None, salv
     t_model = t0 + fase_grid / f0
     y_model = avaliar_fourier(t_model, params, f0)
     fig, ax = plt.subplots(figsize=(10, 5))
-    ax.plot(fase_dados, y, ".", ms=1, alpha=0.35, label="Dados")
-    ax.plot(fase_grid, y_model, "-", lw=2, alpha=0.95, label="Modelo")
-    ax.set(xlabel="Fase (ciclos)", ylabel="Fluxo (ppm)",
-           title=f"Dobramento (centralizado) - TIC {tic_id}" if tic_id else "Dobramento (centralizado)")
+    ax.plot(fase_dados, y, ".", ms=1, alpha=0.35, label=f"Dados(setor:{i})")
+    ax.plot(fase_grid, y_model, "-", lw=2, alpha=0.95, label="Modelos")
+    ax.set(xlabel="Fase", ylabel="Fluxo",
+           title=f"Trânsito Dobrado - TIC {tic_id}" if tic_id else "Trânsito Dobrado")
     ax.legend()
     if salvar and tic_id is not None:
         salvar_fig(fig, os.path.join(pasta, "dobramento", f"TIC_{tic_id}_dobramento_centralizado.png"))
     plt.show()
     return t0
 
-def analisar_exoplaneta(dados, salvar=False, pasta="plots", pctl=88.1, tol=0.03, max_harm=100, oversample=15, t0_fold=None):
+def analisar_exoplaneta(dados, i, salvar=False, pasta="plots", pctl=88.1, tol=0.03, max_harm=100, oversample=15, t0_fold=None):
     tic_id = int(dados["TIC_ID"])
     periodo = float(dados["period"])
     setores = list(dados["sector"])
     curva = baixar_curva_luz(tic_id, setores)
     if curva is None:
         return
-    plotar_curva_luz(curva, tic_id, salvar=salvar, pasta=pasta)
+    #plotar_curva_luz(curva, tic_id, salvar=salvar, pasta=pasta)
     f0 = 1.0 / periodo
     harmonicos, fmax, n_harm, pg, freqs, powers = detectar_harmonicos_com_expansao(
         curva=curva, f0=f0, max_harm_ini=5, step=10, limite=max_harm, pctl=pctl, tol=tol, oversample=oversample
     )
-    period_dom = pg.period_at_max_power.value
-    plotar_periodograma(freqs, powers, f0, period_dom, harmonicos, tic_id, salvar=salvar, pasta=pasta, max_harm=n_harm)
+    #period_dom = pg.period_at_max_power.value
+    #plotar_periodograma(freqs, powers, f0, period_dom, harmonicos, tic_id, salvar=salvar, pasta=pasta, max_harm=n_harm)
     params = ajustar_fourier(curva, f0=f0, num_harm=max(len(harmonicos), 1))
-    fig, ax = plt.subplots(figsize=(10, 5))
-    t, y = curva.time.value, curva.flux.value
-    y_fit = avaliar_fourier(t, params, f0)
-    ax.plot(t, y, ".", ms=1, label="Dados")
-    ax.plot(t, y_fit, "-", lw=2, label="Ajuste")
-    ax.set(title=f"Ajuste Série de Fourier - TIC {tic_id}", xlabel="Tempo (dias)", ylabel="Fluxo (ppm)")
-    ax.legend()
-    if salvar:
-        salvar_fig(fig, os.path.join(pasta, "ajustes_fourier", f"TIC_{tic_id}_ajuste.png"))
-    plt.show()
-    t, resid, _ = calcular_residuos(curva, params, f0)
-    fig, ax = plt.subplots(figsize=(10, 4))
-    ax.plot(t, resid, ".", ms=1)
-    ax.axhline(0.0, color="gray", lw=1)
-    ax.set(title=f"Resíduo temporal - TIC {tic_id}", xlabel="Tempo (dias)", ylabel="Resíduo (ppm)")
-    if salvar:
-        salvar_fig(fig, os.path.join(pasta, "residuos", f"TIC_{tic_id}_residuo_tempo.png"))
-    plt.show()
-    freqs_r, powers_r, _ = periodograma_residuo(t, resid, max_frequency=fmax, oversample=oversample)
-    plotar_periodograma_residuo(freqs_r, powers_r, f0=f0, tic_id=tic_id, salvar=salvar, pasta=pasta)
-    plotar_dobramento_centralizado(curva, params, f0, t0=t0_fold, tic_id=tic_id, salvar=salvar, pasta=pasta, n_model=2000)
+    #fig, ax = plt.subplots(figsize=(10, 5))
+    #t, y = curva.time.value, curva.flux.value
+    #y_fit = avaliar_fourier(t, params, f0)
+    #ax.plot(t, y, ".", ms=1, label="Dados")
+    #ax.plot(t, y_fit, "-", lw=2, label="Ajuste")
+    #ax.set(title=f"Ajuste Série de Fourier - TIC {tic_id}", xlabel="Tempo (dias)", ylabel="Fluxo")
+    #ax.legend()
+    #if salvar:
+    #    salvar_fig(fig, os.path.join(pasta, "ajustes_fourier", f"TIC_{tic_id}_ajuste.png"))
+    #plt.show()
+    #t, resid, _ = calcular_residuos(curva, params, f0)
+    #fig, ax = plt.subplots(figsize=(10, 4))
+    #ax.plot(t, resid, ".", ms=1)
+    #ax.axhline(0.0, color="gray", lw=1)
+    #ax.set(title=f"Resíduo temporal - TIC {tic_id}", xlabel="Tempo (dias)", ylabel="Resíduo")
+    #if salvar:
+    #    salvar_fig(fig, os.path.join(pasta, "residuos", f"TIC_{tic_id}_residuo_tempo.png"))
+    #plt.show()
+    #freqs_r, powers_r, _ = periodograma_residuo(t, resid, max_frequency=fmax, oversample=oversample)
+    #plotar_periodograma_residuo(freqs_r, powers_r, f0=f0, tic_id=tic_id, salvar=salvar, pasta=pasta)
+    plotar_dobramento_centralizado(curva, params, f0, i, t0=t0_fold, tic_id=tic_id, salvar=salvar, pasta=pasta, n_model=2000)
 
-if __name__ == "__main__":
-    ARQUIVO_CSV = "/graduacao/joshuakipper/Documents/ic/exoplanetas/light-curves/dados_exoplanetas/alvos_kp_testes.csv"
-    TIC_ESPECIFICO = 284475976  # None => todos
-    SALVAR_GRAFICOS = False
-    SETOR_MIN, SETOR_MAX = 20, 90
-
-    try:
-        tabela = pd.read_csv(ARQUIVO_CSV)
-    except Exception:
-        raise SystemExit(1)
-
-    for _, linha in tabela.iterrows():
+for i in [1,2,3,4,5,6,7,8,9,10]:
+    if __name__ == "__main__":
+    #    ARQUIVO_CSV = "/graduacao/joshuakipper/Documents/ic/exoplanetas/light-curves/dados_exoplanetas/alvos_kp_testes.csv"
+        ARQUIVO_CSV = "/home/joshua/Documentos/ufrgs/light-curves-main/dados_exoplanetas/data_ExoFOP(taina).csv"
+        TIC_ESPECIFICO = 38846515  # None => todos
+        SALVAR_GRAFICOS = False
+        SETOR_MIN, SETOR_MAX = i, i
+    
         try:
-            tic_id = int(linha["star_name"])
+            tabela = pd.read_csv(ARQUIVO_CSV)
         except Exception:
-            continue
-        if TIC_ESPECIFICO is not None and tic_id != TIC_ESPECIFICO:
-            continue
-        setores_validos = []
-        for s in str(linha.get("Sectors", "")).split(","):
+            raise SystemExit(1)
+    
+        for _, linha in tabela.iterrows():
             try:
-                setor = int(s.strip())
-                if SETOR_MIN <= setor <= SETOR_MAX:
-                    setores_validos.append(setor)
-            except ValueError:
-                pass
-        if not setores_validos:
-            continue
-        try:
-            alvo = {
-                "TIC_ID": tic_id,
-                "period": float(linha["orbital_period(days)"]),
-                "sector": setores_validos
-            }
-        except Exception:
-            continue
-        analisar_exoplaneta(
-            dados=alvo,
-            salvar=SALVAR_GRAFICOS,
-            pasta="plots",
-            pctl=88.1,
-            tol=0.03,
-            max_harm=100,
-            oversample=15,
-            t0_fold=None
-        )
+                tic_id = int(linha["star_name"])
+            except Exception:
+                continue
+            if TIC_ESPECIFICO is not None and tic_id != TIC_ESPECIFICO:
+                continue
+            setores_validos = []
+            for s in str(linha.get("Sectors", "")).split(","):
+                try:
+                    setor = int(s.strip())
+                    if SETOR_MIN <= setor <= SETOR_MAX:
+                        setores_validos.append(setor)
+                except ValueError:
+                    pass
+            if not setores_validos:
+                continue
+            try:
+                alvo = {
+                    "TIC_ID": tic_id,
+                    "period": float(linha["orbital_period(days)"]),
+                    "sector": setores_validos
+                }
+            except Exception:
+                continue
+            analisar_exoplaneta(
+                dados=alvo,
+                i=i,
+                salvar=SALVAR_GRAFICOS,
+                pasta="plots",
+                pctl=88.1,
+                tol=0.03,
+                max_harm=100,
+                oversample=15,
+                t0_fold=None
+            )

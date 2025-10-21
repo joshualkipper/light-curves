@@ -168,7 +168,7 @@ if __name__ == "__main__":
     # (A) Dados sintéticos
     lc, meta = gerar_curva_box_com_sub(
         P1=3.14159,  t01=0.5,  depth1_ppm=1500, dur1_horas=3.0,
-        P2=2.20,     t02=0.3,  depth2_ppm=800,  dur2_horas=2.0,
+        P2=5.20,     t02=0.3,  depth2_ppm=800,  dur2_horas=2.0,
         ruido_ppm=250
     )
     t = lc.time.value
@@ -184,6 +184,26 @@ if __name__ == "__main__":
     bm = batman.TransitModel(params_bm, t)       # fluxo relativo ~ 1
     flux_rel = bm.light_curve(params_bm)         # relativo
     y_batman_ppm = (flux_rel - 1.0) * 1e6        # ppm, baseline 0
+
+    # 0) Série temporal — curva completa + modelos
+    plt.figure(figsize=(12,4), dpi=200)
+    plt.plot(t, y, '.', ms=1.8, alpha=0.45, label='Dados (ppm)')
+    #plt.plot(t, y_fit_fourier, '-', lw=1.6, label='Modelo Fourier (ppm)')
+    #plt.plot(t, y_batman_ppm, '-', lw=1.6, label='Modelo BATMAN (ppm)')
+    plt.xlabel('Tempo (dias)'); plt.ylabel('Fluxo (ppm)')
+    plt.title('Curva de luz completa (domínio do tempo)')
+    plt.grid(True); plt.legend(); plt.tight_layout(); plt.show()
+
+    # (Opcional) Resíduos no tempo
+    res_F = y - y_fit_fourier
+    res_B = y - y_batman_ppm
+    plt.figure(figsize=(12,4), dpi=200)
+    plt.plot(t, res_F, '-', lw=1.0, alpha=0.9, label='Resíduos vs Fourier')
+    plt.plot(t, res_B, '-', lw=1.0, alpha=0.9, label='Resíduos vs BATMAN')
+    plt.axhline(0, lw=1)
+    plt.xlabel('Tempo (dias)'); plt.ylabel('Fluxo (ppm)')
+    plt.title('Resíduos no domínio do tempo')
+    plt.grid(True); plt.legend(); plt.tight_layout(); plt.show()
 
     # ==================== GRÁFICOS SEPARADOS ====================
 
